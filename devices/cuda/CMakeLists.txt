@@ -41,10 +41,14 @@ set(OIDN_CUDA_SOURCES
   cuda_external_buffer.cpp
   cuda_module.cpp
   cutlass_conv.h
-  cutlass_conv_sm70.cu
-  cutlass_conv_sm75.cu
   cutlass_conv_sm80.cu
 )
+
+if (CUDAToolkit_VERSION VERSION_LESS 13.0)
+  list(APPEND OIDN_CUDA_SOURCES cutlass_conv_sm70.cu cutlass_conv_sm75.cu)
+else()
+  list(APPEND OIDN_CUDA_SOURCES cutlass_conv_compat.cu)
+endif()
 
 # We do not generate PTX to avoid excessive JIT compile times
 function(oidn_set_cuda_sm_flags output_var)
@@ -56,7 +60,7 @@ function(oidn_set_cuda_sm_flags output_var)
   set(${output_var} "${${output_var}}" PARENT_SCOPE)
 endfunction()
 
-oidn_set_cuda_sm_flags(OIDN_CUDA_SM_FLAGS 70 75 80 90 100 120)
+oidn_set_cuda_sm_flags(OIDN_CUDA_SM_FLAGS 80 90 100 120)
 set_source_files_properties(
   cuda_conv.cu
   cuda_device.cu
@@ -64,17 +68,19 @@ set_source_files_properties(
   PROPERTIES COMPILE_FLAGS ${OIDN_CUDA_SM_FLAGS}
 )
 
-oidn_set_cuda_sm_flags(OIDN_CUDA_SM70_FLAGS 70)
-set_source_files_properties(
-  cutlass_conv_sm70.cu
-  PROPERTIES COMPILE_FLAGS ${OIDN_CUDA_SM70_FLAGS}
-)
+if (CUDAToolkit_VERSION VERSION_LESS 13.0)
+  oidn_set_cuda_sm_flags(OIDN_CUDA_SM70_FLAGS 70)
+  set_source_files_properties(
+    cutlass_conv_sm70.cu
+    PROPERTIES COMPILE_FLAGS ${OIDN_CUDA_SM70_FLAGS}
+  )
 
-oidn_set_cuda_sm_flags(OIDN_CUDA_SM75_FLAGS 75)
-set_source_files_properties(
-  cutlass_conv_sm75.cu
-  PROPERTIES COMPILE_FLAGS ${OIDN_CUDA_SM75_FLAGS}
-)
+  oidn_set_cuda_sm_flags(OIDN_CUDA_SM75_FLAGS 75)
+  set_source_files_properties(
+    cutlass_conv_sm75.cu
+    PROPERTIES COMPILE_FLAGS ${OIDN_CUDA_SM75_FLAGS}
+  )
+endif()
 
 oidn_set_cuda_sm_flags(OIDN_CUDA_SM80_FLAGS 80 90 100 120)
 set_source_files_properties(
